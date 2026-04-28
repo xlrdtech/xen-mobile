@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Xen</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden}
+#pin-gate{position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
+#pin-gate h1{font-size:1.4rem;letter-spacing:.15em;margin-bottom:2rem;opacity:.7}
+#pin-gate input{background:#1a1a2e;border:1px solid #333;border-radius:12px;color:#e8e8f0;font-size:1.8rem;letter-spacing:.4em;padding:.8rem 1.2rem;text-align:center;width:200px;-webkit-text-security:disc}
+#pin-gate .err{color:#ff4466;font-size:.85rem;margin-top:.8rem;min-height:1.2em}
+#shell{display:none;flex-direction:column;height:100%}
+#tabs-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #222;overflow-x:auto;padding:0 4px;min-height:40px;gap:2px;scrollbar-width:none}
+#tabs-bar::-webkit-scrollbar{display:none}
+.tab{background:#1a1a28;border-radius:8px 8px 0 0;color:#aaa;cursor:pointer;font-size:.78rem;max-width:160px;min-width:80px;overflow:hidden;padding:6px 10px;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.tab.active{background:#222238;color:#e8e8f0}
+#new-tab-btn{background:none;border:none;color:#666;cursor:pointer;font-size:1.4rem;flex-shrink:0;padding:0 8px}
+#url-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #222;gap:6px;padding:6px 8px}
+#url-input{background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#e8e8f0;flex:1;font-size:.9rem;outline:none;padding:7px 14px}
+#url-input:focus{border-color:#5555ff}
+#go-btn{background:#2a2aff;border:none;border-radius:16px;color:#fff;cursor:pointer;font-size:.8rem;padding:7px 14px}
+#frames{flex:1;position:relative;overflow:hidden}
+.frame{position:absolute;inset:0;border:none;display:none}
+.frame.active{display:block}
+#omni-link{background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#7777cc;cursor:pointer;font-size:.8rem;padding:7px 14px;white-space:nowrap}
+#mic-btn{background:#1a1a28;border:1px solid #333;border-radius:50%;color:#aaa;cursor:pointer;font-size:1.2rem;flex-shrink:0;height:36px;width:36px;display:flex;align-items:center;justify-content:center}
+#mic-btn.listening{background:#ff224488;border-color:#ff2244;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#status-bar{background:#0d0d1a;border-top:1px solid #1a1a2e;color:#555;font-size:.7rem;padding:3px 12px;text-align:right}
+</style>
+</head>
+<body>
+
+<div id="pin-gate">
+  <h1>XEN</h1>
+  <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autofocus>
+  <div class="err" id="pin-err"></div>
+</div>
+
+<div id="shell">
+  <div id="tabs-bar">
+    <button id="new-tab-btn" title="New tab">＋</button>
+  </div>
+  <div id="url-bar">
+    <button id="omni-link" onclick="openOmni()">⚡ Omninbox</button>
+    <input id="url-input" type="url" placeholder="Search or enter URL…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="go-btn">Go</button>
+    <button id="mic-btn" title="Voice">🎤</button>
+  </div>
+  <div id="frames"></div>
+  <div id="status-bar" id="status">ready</div>
+</div>
+
+<script>
+const PIN = '0000';
+const API = 'https://api.xlrd.org';
+let tabs = [], activeIdx = -1, recognition = null;
+
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPin();
+});
+document.getElementById('pin-input').addEventListener('input', e => {
+  if (e.target.value.length === 4) checkPin();
+});
+
+function checkPin() {
+  const v = document.getElementById('pin-input').value;
+  if (v === PIN) {
+    document.getElementById('pin-gate').style.display = 'none';
+    document.getElementById('shell').style.display = 'flex';
+    newTab('https://app.xlrd.org');
+  } else {
+    document.getElementById('pin-err').textContent = 'Wrong PIN';
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => document.getElementById('pin-err').textContent = '', 1500);
+  }
+}
+
+function newTab(url) {
+  url = url || 'about:blank';
+  const frame = document.createElement('iframe');
+  frame.className = 'frame';
+  frame.src = url;
+  frame.allow = 'microphone; camera; autoplay';
+  document.getElementById('frames').appendChild(frame);
+
+  const tab = document.createElement('div');
+  tab.className = 'tab';
+  tab.textContent = urlTitle(url);
+  const idx = tabs.length;
+  tab.onclick = () => switchTab(idx);
+  document.getElementById('tabs-bar').insertBefore(tab, document.getElementById('new-tab-btn'));
+
+  tabs.push({ frame, tab, url });
+  switchTab(idx);
+  frame.onload = () => { tab.textContent = urlTitle(frame.src); };
+}
+
+function switchTab(idx) {
+  if (activeIdx >= 0) {
+    tabs[activeIdx].frame.classList.remove('active');
+    tabs[activeIdx].tab.classList.remove('active');
+  }
+  activeIdx = idx;
+  tabs[idx].frame.classList.add('active');
+  tabs[idx].tab.classList.add('active');
+  document.getElementById('url-input').value = tabs[idx].url;
+}
+
+function navigate(url) {
+  if (!url) return;
+  if (!/^https?:\/\//i.test(url)) url = url.includes('.') ? 'https://' + url : 'https://www.google.com/search?q=' + encodeURIComponent(url);
+  if (activeIdx < 0) { newTab(url); return; }
+  tabs[activeIdx].frame.src = url;
+  tabs[activeIdx].url = url;
+  tabs[activeIdx].tab.textContent = urlTitle(url);
+}
+
+function urlTitle(url) {
+  try { return new URL(url).hostname.replace('www.', '') || url; } catch { return url; }
+}
+
+function openOmni() { navigate('http://127.0.0.1:4441'); }
+
+document.getElementById('new-tab-btn').onclick = () => newTab();
+document.getElementById('go-btn').onclick = () => navigate(document.getElementById('url-input').value.trim());
+document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') navigate(e.target.value.trim()); });
+
+// Voice
+const micBtn = document.getElementById('mic-btn');
+micBtn.onclick = () => {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { alert('Voice not supported in this browser'); return; }
+  if (recognition && micBtn.classList.contains('listening')) { recognition.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+  recognition.onstart = () => micBtn.classList.add('listening');
+  recognition.onend = () => micBtn.classList.remove('listening');
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('url-input').value = t;
+    navigate(t);
+  };
+  recognition.start();
+};
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+</script>
+</body>
+</html>
