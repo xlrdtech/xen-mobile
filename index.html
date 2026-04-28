@@ -12,34 +12,37 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;overflow:hidden}
 #pin-gate{position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999}
-#pin-gate h1{font-size:1.4rem;letter-spacing:.15em;margin-bottom:2rem;opacity:.7}
+#pin-gate h1{font-size:1.4rem;letter-spacing:.25em;margin-bottom:2rem;opacity:.6}
 #pin-gate input{background:#1a1a2e;border:1px solid #333;border-radius:12px;color:#e8e8f0;font-size:1.8rem;letter-spacing:.4em;padding:.8rem 1.2rem;text-align:center;width:200px;-webkit-text-security:disc}
 #pin-gate .err{color:#ff4466;font-size:.85rem;margin-top:.8rem;min-height:1.2em}
 #shell{display:none;flex-direction:column;height:100%}
-#tabs-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #222;overflow-x:auto;padding:0 4px;min-height:40px;gap:2px;scrollbar-width:none}
+#tabs-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #1e1e30;overflow-x:auto;padding:4px 4px 0;gap:2px;scrollbar-width:none;min-height:42px}
 #tabs-bar::-webkit-scrollbar{display:none}
-.tab{background:#1a1a28;border-radius:8px 8px 0 0;color:#aaa;cursor:pointer;font-size:.78rem;max-width:160px;min-width:80px;overflow:hidden;padding:6px 10px;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.tab{background:#1a1a28;border-radius:8px 8px 0 0;color:#888;cursor:pointer;font-size:.75rem;max-width:150px;min-width:70px;overflow:hidden;padding:7px 10px;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;transition:background .15s}
 .tab.active{background:#222238;color:#e8e8f0}
-#new-tab-btn{background:none;border:none;color:#666;cursor:pointer;font-size:1.4rem;flex-shrink:0;padding:0 8px}
-#url-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #222;gap:6px;padding:6px 8px}
+#new-tab-btn{background:none;border:none;color:#555;cursor:pointer;font-size:1.3rem;flex-shrink:0;padding:2px 10px;line-height:1}
+#url-bar{display:flex;align-items:center;background:#111118;border-bottom:1px solid #1e1e30;gap:6px;padding:6px 8px}
 #url-input{background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#e8e8f0;flex:1;font-size:.9rem;outline:none;padding:7px 14px}
-#url-input:focus{border-color:#5555ff}
-#go-btn{background:#2a2aff;border:none;border-radius:16px;color:#fff;cursor:pointer;font-size:.8rem;padding:7px 14px}
-#frames{flex:1;position:relative;overflow:hidden}
-.frame{position:absolute;inset:0;border:none;display:none}
-.frame.active{display:block}
-#omni-link{background:#1a1a28;border:1px solid #2a2a40;border-radius:20px;color:#7777cc;cursor:pointer;font-size:.8rem;padding:7px 14px;white-space:nowrap}
-#mic-btn{background:#1a1a28;border:1px solid #333;border-radius:50%;color:#aaa;cursor:pointer;font-size:1.2rem;flex-shrink:0;height:36px;width:36px;display:flex;align-items:center;justify-content:center}
-#mic-btn.listening{background:#ff224488;border-color:#ff2244;animation:pulse 1s infinite}
+#url-input:focus{border-color:#4444cc}
+#go-btn{background:#3333cc;border:none;border-radius:16px;color:#fff;cursor:pointer;font-size:.8rem;padding:7px 14px;flex-shrink:0}
+#mic-btn{background:#1a1a28;border:1px solid #2a2a40;border-radius:50%;color:#888;cursor:pointer;font-size:1.1rem;flex-shrink:0;height:36px;width:36px;display:flex;align-items:center;justify-content:center}
+#mic-btn.listening{border-color:#ff2244;background:#3a0a14;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-#status-bar{background:#0d0d1a;border-top:1px solid #1a1a2e;color:#555;font-size:.7rem;padding:3px 12px;text-align:right}
+#content{flex:1;position:relative;overflow:hidden;background:#0d0d18}
+#content-frame{position:absolute;inset:0;border:none;width:100%;height:100%;display:none}
+#content-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:.4}
+#content-placeholder .logo{font-size:3rem;letter-spacing:.2em}
+#content-placeholder .hint{font-size:.8rem}
+#status-bar{background:#0a0a12;border-top:1px solid #1a1a2a;color:#444;font-size:.68rem;padding:3px 12px;display:flex;justify-content:space-between}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot.green{background:#22cc66}.dot.red{background:#cc2244}.dot.grey{background:#444}
 </style>
 </head>
 <body>
 
 <div id="pin-gate">
   <h1>XEN</h1>
-  <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="PIN" autofocus>
+  <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="····" autofocus>
   <div class="err" id="pin-err"></div>
 </div>
 
@@ -48,33 +51,44 @@ html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system
     <button id="new-tab-btn" title="New tab">＋</button>
   </div>
   <div id="url-bar">
-    <button id="omni-link" onclick="openOmni()">⚡ Omninbox</button>
     <input id="url-input" type="url" placeholder="Search or enter URL…" autocomplete="off" autocorrect="off" spellcheck="false">
     <button id="go-btn">Go</button>
     <button id="mic-btn" title="Voice">🎤</button>
   </div>
-  <div id="frames"></div>
-  <div id="status-bar" id="status">ready</div>
+  <div id="content">
+    <iframe id="content-frame"></iframe>
+    <div id="content-placeholder">
+      <div class="logo">XEN</div>
+      <div class="hint">Connected to Mac Xen Browser session</div>
+    </div>
+  </div>
+  <div id="status-bar">
+    <span id="conn-status"><span class="dot grey" id="conn-dot"></span>connecting…</span>
+    <span id="tab-count">0 tabs</span>
+  </div>
 </div>
 
 <script>
 const PIN = '0000';
-const API = 'https://api.xlrd.org';
-let tabs = [], activeIdx = -1, recognition = null;
+// api.xlrd.org = Cloudflare tunnel → omnimind :4441
+// Falls back to direct LAN if on same network
+const API = (() => {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://127.0.0.1:4441';
+  return 'https://api.xlrd.org';
+})();
 
-document.getElementById('pin-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkPin();
-});
-document.getElementById('pin-input').addEventListener('input', e => {
-  if (e.target.value.length === 4) checkPin();
-});
+let session = { tabs: [], activeId: null, seq: 0 };
+let sse = null;
+
+// ── PIN gate ──────────────────────────────────────────────────────────────
+document.getElementById('pin-input').addEventListener('input', e => { if (e.target.value.length === 4) checkPin(); });
+document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
 function checkPin() {
-  const v = document.getElementById('pin-input').value;
-  if (v === PIN) {
+  if (document.getElementById('pin-input').value === PIN) {
     document.getElementById('pin-gate').style.display = 'none';
     document.getElementById('shell').style.display = 'flex';
-    newTab('https://app.xlrd.org');
+    connectSession();
   } else {
     document.getElementById('pin-err').textContent = 'Wrong PIN';
     document.getElementById('pin-input').value = '';
@@ -82,71 +96,97 @@ function checkPin() {
   }
 }
 
-function newTab(url) {
-  url = url || 'about:blank';
-  const frame = document.createElement('iframe');
-  frame.className = 'frame';
-  frame.src = url;
-  frame.allow = 'microphone; camera; autoplay';
-  document.getElementById('frames').appendChild(frame);
-
-  const tab = document.createElement('div');
-  tab.className = 'tab';
-  tab.textContent = urlTitle(url);
-  const idx = tabs.length;
-  tab.onclick = () => switchTab(idx);
-  document.getElementById('tabs-bar').insertBefore(tab, document.getElementById('new-tab-btn'));
-
-  tabs.push({ frame, tab, url });
-  switchTab(idx);
-  frame.onload = () => { tab.textContent = urlTitle(frame.src); };
+// ── Session sync ──────────────────────────────────────────────────────────
+function connectSession() {
+  if (sse) sse.close();
+  sse = new EventSource(`${API}/api/browser/events`);
+  sse.onopen = () => setConn(true);
+  sse.onerror = () => { setConn(false); setTimeout(connectSession, 3000); };
+  sse.addEventListener('session', e => {
+    session = JSON.parse(e.data);
+    renderTabs();
+  });
 }
 
-function switchTab(idx) {
-  if (activeIdx >= 0) {
-    tabs[activeIdx].frame.classList.remove('active');
-    tabs[activeIdx].tab.classList.remove('active');
+function setConn(ok) {
+  document.getElementById('conn-dot').className = `dot ${ok ? 'green' : 'red'}`;
+  document.getElementById('conn-status').childNodes[1].textContent = ok ? 'live' : 'reconnecting…';
+}
+
+// ── Tab rendering ─────────────────────────────────────────────────────────
+function renderTabs() {
+  const bar = document.getElementById('tabs-bar');
+  const btn = document.getElementById('new-tab-btn');
+  // Remove old tab els
+  bar.querySelectorAll('.tab').forEach(el => el.remove());
+  session.tabs.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (t.id === session.activeId ? ' active' : '');
+    el.textContent = t.title || urlHost(t.url) || 'New Tab';
+    el.title = t.url || '';
+    el.onclick = () => switchTab(t.id);
+    bar.insertBefore(el, btn);
+  });
+  document.getElementById('tab-count').textContent = `${session.tabs.length} tab${session.tabs.length !== 1 ? 's' : ''}`;
+  const active = session.tabs.find(t => t.id === session.activeId);
+  if (active) {
+    document.getElementById('url-input').value = active.url || '';
+    loadPreview(active.url);
   }
-  activeIdx = idx;
-  tabs[idx].frame.classList.add('active');
-  tabs[idx].tab.classList.add('active');
-  document.getElementById('url-input').value = tabs[idx].url;
 }
 
-function navigate(url) {
+function loadPreview(url) {
+  const frame = document.getElementById('content-frame');
+  const ph = document.getElementById('content-placeholder');
+  if (url && url !== 'about:blank' && url !== '') {
+    frame.src = url;
+    frame.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    frame.style.display = 'none';
+    ph.style.display = 'flex';
+  }
+}
+
+// ── Commands → omnimind → Mac XenBrowser ─────────────────────────────────
+async function cmd(body) {
+  try {
+    const r = await fetch(`${API}/api/browser/cmd`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    return r.ok ? r.json() : {};
+  } catch { return {}; }
+}
+
+function switchTab(id) { cmd({ action: 'tab_focus', id }); }
+
+function newTab(url) { cmd({ action: 'tab_new', url: url || 'about:blank' }); }
+
+function navigate(raw) {
+  let url = raw.trim();
   if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = url.includes('.') ? 'https://' + url : 'https://www.google.com/search?q=' + encodeURIComponent(url);
-  if (activeIdx < 0) { newTab(url); return; }
-  tabs[activeIdx].frame.src = url;
-  tabs[activeIdx].url = url;
-  tabs[activeIdx].tab.textContent = urlTitle(url);
+  cmd({ action: 'navigate', url });
+  document.getElementById('url-input').value = url;
 }
 
-function urlTitle(url) {
-  try { return new URL(url).hostname.replace('www.', '') || url; } catch { return url; }
-}
+function urlHost(url) { try { return new URL(url).hostname.replace('www.',''); } catch { return url; } }
 
-function openOmni() { navigate('http://127.0.0.1:4441'); }
-
+// ── UI events ─────────────────────────────────────────────────────────────
 document.getElementById('new-tab-btn').onclick = () => newTab();
-document.getElementById('go-btn').onclick = () => navigate(document.getElementById('url-input').value.trim());
-document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') navigate(e.target.value.trim()); });
+document.getElementById('go-btn').onclick = () => navigate(document.getElementById('url-input').value);
+document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') navigate(e.target.value); });
 
-// Voice
+// ── Voice ─────────────────────────────────────────────────────────────────
 const micBtn = document.getElementById('mic-btn');
+let recognition = null;
 micBtn.onclick = () => {
-  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { alert('Voice not supported in this browser'); return; }
-  if (recognition && micBtn.classList.contains('listening')) { recognition.stop(); return; }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice not supported'); return; }
+  if (recognition && micBtn.classList.contains('listening')) { recognition.stop(); return; }
   recognition = new SR();
-  recognition.lang = 'en-US'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+  recognition.lang = 'en-US'; recognition.interimResults = false;
   recognition.onstart = () => micBtn.classList.add('listening');
   recognition.onend = () => micBtn.classList.remove('listening');
-  recognition.onresult = e => {
-    const t = e.results[0][0].transcript;
-    document.getElementById('url-input').value = t;
-    navigate(t);
-  };
+  recognition.onresult = e => navigate(e.results[0][0].transcript);
   recognition.start();
 };
 
