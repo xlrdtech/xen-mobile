@@ -36,6 +36,11 @@ html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system
 #status-bar{background:#0a0a12;border-top:1px solid #1a1a2a;color:#444;font-size:.68rem;padding:3px 12px;display:flex;justify-content:space-between}
 .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px}
 .dot.green{background:#22cc66}.dot.red{background:#cc2244}.dot.grey{background:#444}
+.navbtn{background:#1a1a28;border:1px solid #2a2a40;border-radius:50%;color:#888;cursor:pointer;font-size:.95rem;flex-shrink:0;height:32px;width:32px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+.navbtn:active{background:#222238;color:#e8e8f0}
+.navbtn:disabled{opacity:.35}
+#swipe-zone{height:22px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);border-bottom:1px solid #1e1e30;touch-action:pan-x;user-select:none;-webkit-user-select:none;position:relative}
+#swipe-zone::before{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:24px;height:3px;border-radius:2px;background:rgba(255,255,255,.18)}
 </style>
 </head>
 <body>
@@ -51,10 +56,14 @@ html,body{height:100%;background:#0a0a0f;color:#e8e8f0;font-family:-apple-system
     <button id="new-tab-btn" title="New tab">＋</button>
   </div>
   <div id="url-bar">
+    <button id="back-btn" class="navbtn" title="Back" aria-label="Back">←</button>
+    <button id="forward-btn" class="navbtn" title="Forward" aria-label="Forward">→</button>
+    <button id="reload-btn" class="navbtn" title="Reload" aria-label="Reload">↻</button>
     <input id="url-input" type="url" placeholder="Search or enter URL…" autocomplete="off" autocorrect="off" spellcheck="false">
     <button id="go-btn">Go</button>
     <button id="mic-btn" title="Voice">🎤</button>
   </div>
+  <div id="swipe-zone" aria-label="Swipe left or right to switch tabs" role="tablist"></div>
   <div id="content">
     <iframe id="content-frame"></iframe>
     <div id="content-placeholder">
@@ -191,6 +200,31 @@ micBtn.onclick = () => {
 };
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+// === Nav buttons + swipe-tabs (added by Xen) ===
+async function _xenNav(action, extra){
+  try{ return await fetch(`${API}/api/browser/cmd`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action}, extra||{}))}); }
+  catch(e){ console.warn('nav', action, e); }
+}
+document.getElementById('back-btn')?.addEventListener('click', ()=>_xenNav('back'));
+document.getElementById('forward-btn')?.addEventListener('click', ()=>_xenNav('forward'));
+document.getElementById('reload-btn')?.addEventListener('click', ()=>_xenNav('reload'));
+(function(){
+  const z=document.getElementById('swipe-zone'); if(!z) return;
+  let sx=null, sy=null, t0=0;
+  z.addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; t0=Date.now(); }, {passive:true});
+  z.addEventListener('touchend',e=>{
+    if(sx===null) return;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    sx=null;
+    if(Date.now()-t0 > 700) return;
+    if(Math.abs(dy) > 30) return;
+    if(Math.abs(dx) < 40) return;
+    _xenNav(dx<0 ? 'tab_next' : 'tab_prev');
+  }, {passive:true});
+})();
+
 </script>
 </body>
 </html>
